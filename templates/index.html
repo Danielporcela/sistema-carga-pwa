@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema de Carga por Setor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-light">
+
+<div class="container py-4">
+    <h3 class="text-center mb-4">📦 Sistema de Carga por Setor</h3>
+
+    <form method="POST" enctype="multipart/form-data" class="card p-3 shadow-sm">
+        <div class="mb-3">
+            <label class="form-label">Arquivo Excel</label>
+            <input type="file" name="arquivo" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Código do Setor</label>
+            <input type="text" name="setor" class="form-control" placeholder="Ex: Id01">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Ordem do Ranking</label>
+            <select name="ordem" class="form-select">
+                <option value="crescente">Crescente</option>
+                <option value="decrescente">Decrescente</option>
+            </select>
+        </div>
+
+        <button class="btn btn-primary w-100">Consultar</button>
+    </form>
+
+    {% if resultado %}
+    <div class="alert alert-success mt-4">
+        <strong>Setor:</strong> {{ resultado[0] }} <br>
+        <strong>Carga Total:</strong> {{ resultado[1] }}
+    </div>
+    {% endif %}
+
+    {% if ranking %}
+    <h5 class="mt-4">🏆 Ranking</h5>
+
+    <ul class="list-group">
+        {% for setor, carga in ranking %}
+        <li class="list-group-item d-flex justify-content-between">
+            {{ loop.index }}º - {{ setor }}
+            <strong>{{ carga }}</strong>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <canvas id="grafico" class="mt-4"></canvas>
+
+    <script>
+        const labels = {{ ranking | map(attribute=0) | list | safe }};
+        const data = {{ ranking | map(attribute=1) | list | safe }};
+
+        new Chart(document.getElementById('grafico'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Carga Total',
+                    data: data
+                }]
+            }
+        });
+    </script>
+    {% endif %}
+</div>
+
+</body>
+</html>
