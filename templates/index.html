@@ -1,81 +1,156 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <title>Sistema de Carga por Setor</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- PWA / MOBILE -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/android-chrome-192x192.png">
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 12px;
+            background: #f1f5f9;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: auto;
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #0f172a;
+        }
+
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background: #0f172a;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1e293b;
+        }
+
+        .resultado {
+            margin-top: 16px;
+            padding: 12px;
+            background: #e0f2fe;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .ranking {
+            margin-top: 20px;
+        }
+
+        .ranking h2 {
+            text-align: center;
+            color: #0f172a;
+        }
+
+        .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .top {
+            background: #dcfce7;
+            font-weight: bold;
+        }
+
+        .posicao {
+            font-weight: bold;
+            margin-right: 6px;
+        }
+    </style>
 </head>
-<body class="bg-light">
 
-<div class="container py-4">
-    <h3 class="text-center mb-4">📦 Sistema de Carga por Setor</h3>
+<body>
+<div class="container">
 
-    <form method="POST" enctype="multipart/form-data" class="card p-3 shadow-sm">
-        <div class="mb-3">
-            <label class="form-label">Arquivo Excel</label>
-            <input type="file" name="arquivo" class="form-control" required>
-        </div>
+    <h1>📦 Carga por Setor</h1>
 
-        <div class="mb-3">
-            <label class="form-label">Código do Setor</label>
-            <input type="text" name="setor" class="form-control" placeholder="Ex: Id01">
-        </div>
+    <form method="POST" enctype="multipart/form-data">
 
-        <div class="mb-3">
-            <label class="form-label">Ordem do Ranking</label>
-            <select name="ordem" class="form-select">
-                <option value="crescente">Crescente</option>
-                <option value="decrescente">Decrescente</option>
-            </select>
-        </div>
+        <label>📂 Planilha Excel</label>
+        <input type="file" name="arquivo" required>
 
-        <button class="btn btn-primary w-100">Consultar</button>
+        <label>🔎 Código do Setor</label>
+        <input type="text" name="setor" placeholder="Ex: Id01, 4x4 frota 74">
+
+        <label>📊 Ordem do Ranking</label>
+        <select name="ordem">
+            <option value="crescente" {% if ordem == "crescente" %}selected{% endif %}>
+                Crescente
+            </option>
+            <option value="decrescente" {% if ordem == "decrescente" %}selected{% endif %}>
+                Decrescente
+            </option>
+        </select>
+
+        <button type="submit">Consultar</button>
     </form>
 
     {% if resultado %}
-    <div class="alert alert-success mt-4">
-        <strong>Setor:</strong> {{ resultado[0] }} <br>
-        <strong>Carga Total:</strong> {{ resultado[1] }}
-    </div>
+        <div class="resultado">
+            {{ resultado[0] }} → Carga Total: {{ resultado[1] }}
+        </div>
     {% endif %}
 
     {% if ranking %}
-    <h5 class="mt-4">🏆 Ranking</h5>
+        <div class="ranking">
+            <h2>🏆 Ranking de Carga</h2>
 
-    <ul class="list-group">
-        {% for setor, carga in ranking %}
-        <li class="list-group-item d-flex justify-content-between">
-            {{ loop.index }}º - {{ setor }}
-            <strong>{{ carga }}</strong>
-        </li>
-        {% endfor %}
-    </ul>
-
-    <canvas id="grafico" class="mt-4"></canvas>
-
-    <script>
-        const labels = {{ ranking | map(attribute=0) | list | safe }};
-        const data = {{ ranking | map(attribute=1) | list | safe }};
-
-        new Chart(document.getElementById('grafico'), {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Carga Total',
-                    data: data
-                }]
-            }
-        });
-    </script>
+            {% for item in ranking %}
+                <div class="item {% if loop.index <= 5 %}top{% endif %}">
+                    <span class="posicao">{{ loop.index }}º</span>
+                    <span>{{ item.setor }}</span>
+                    <span>{{ item.carga }}</span>
+                </div>
+            {% endfor %}
+        </div>
     {% endif %}
+
 </div>
+
+<!-- SERVICE WORKER -->
+<script>
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/static/service-worker.js");
+}
+</script>
 
 </body>
 </html>
+
