@@ -6,25 +6,39 @@ import io
 
 app = Flask(__name__)
 
-# ===== REGRAS FIXAS =====
+# ================== REGRAS FIXAS ==================
 COL_INI = "B"
 COL_FIM = "T"
 LINHA_INICIAL = 3
 INTERVALO = 28
 OFFSET_RESULTADO = 21
 TOTAL_SETORES = 54
-# =======================
+# ==================================================
 
 def normalizar(valor):
     if valor is None:
         return ""
     return re.sub(r"[^A-Z0-9]", "", str(valor).upper())
 
-def processar_planilha(arquivo):
-    wb = load_workbook(io.BytesIO(arquivo), data_only=True)
+def carregar_planilha(arquivo_bytes):
+    wb = load_workbook(io.BytesIO(arquivo_bytes), data_only=True)
     return wb.active
 
-def coletar_ranking(planilha, crescente=True):
+def buscar_setor(planilha, codigo):
+    col_ini = column_index_from_string(COL_INI)
+    col_fim = column_index_from_string(COL_FIM)
+    codigo = normalizar(codigo)
+
+    for i in range(TOTAL_SETORES):
+        linha = LINHA_INICIAL + i * INTERVALO
+        for col in range(col_ini, col_fim + 1):
+            valor_setor = planilha.cell(linha, col).value
+            if normalizar(valor_setor) == codigo:
+                carga = planilha.cell(linha + OFFSET_RESULTADO, col).value
+                return valor_setor, carga
+    return None
+
+def gerar_ranking(planilha, crescente=True):
     ranking = []
     col_ini = column_index_from_string(COL_INI)
     col_fim = column_index_from_string(COL_FIM)
@@ -34,10 +48,14 @@ def coletar_ranking(planilha, crescente=True):
         for col in range(col_ini, col_fim + 1):
             setor = planilha.cell(linha, col).value
             carga = planilha.cell(linha + OFFSET_RESULTADO, col).value
-            if setor and isinstance(carga, (int, float)):
-                ranking.append((setor, carga))
 
-    ranking.sort(key=lambda x: x[1], reverse=not crescente)
+            if setor and isinstance(carga, (int, float)):
+                ranking.append({
+                    "setor": setor,
+                    "carga": carga
+                })
+
+    ranking.sort(key=lambda x: x["carga"], reverse=not crescente)
     return ranking
 
 @app.route("/", methods=["GET", "POST"])
@@ -48,26 +66,15 @@ def index():
 
     if request.method == "POST":
         arquivo = request.files.get("arquivo")
-        setor_digitado = request.form.get("setor", "")
+        codigo_setor = request.form.get("setor", "").strip()
 
         if arquivo:
-            planilha = processar_planilha(arquivo.read())
+            planilha = carregar_planilha(arquivo.read())
 
-            # CONSULTA INDIVIDUAL
-            if setor_digitado:
-                cod = normalizar(setor_digitado)
-                col_ini = column_index_from_string(COL_INI)
-                col_fim = column_index_from_string(COL_FIM)
+            if codigo_setor:
+                resultado = buscar_setor(planilha, codigo_setor)
 
-                for i in range(TOTAL_SETORES):
-                    linha = LINHA_INICIAL + i * INTERVALO
-                    for col in range(col_ini, col_fim + 1):
-                        if normalizar(planilha.cell(linha, col).value) == cod:
-                            carga = planilha.cell(linha + OFFSET_RESULTADO, col).value
-                            resultado = (planilha.cell(linha, col).value, carga)
-
-            # RANKING
-            ranking = coletar_ranking(
+            ranking = gerar_ranking(
                 planilha,
                 crescente=(ordem == "crescente")
             )
@@ -80,4 +87,5 @@ def index():
     )
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=5000)
+
