@@ -1,20 +1,24 @@
 {
   "name": "Sistema de Carga por Setor",
   "short_name": "CargaSetor",
+  "description": "Consulta de carga total e ranking por setor",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0d6efd",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
   "icons": [
     {
-      "src": "/static/icon-192.png",
+      "src": "/static/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/static/icon-512.png",
+      "src": "/static/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
   ]
 }
+

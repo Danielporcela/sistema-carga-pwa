@@ -1,97 +1,101 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Sistema de Carga por Setor</title>
-
-    <!-- PWA / MOBILE -->
+    <title>Sistema de Cargas por Setor</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0f172a">
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="apple-touch-icon" href="/static/android-chrome-192x192.png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
     <style>
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 12px;
-            background: #f1f5f9;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background:
+                linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+                url("/static/img/bg.jpg") no-repeat center center fixed;
+            background-size: cover;
         }
 
         .container {
-            max-width: 480px;
-            margin: auto;
-            background: #ffffff;
-            padding: 16px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            max-width: 900px;
+            margin: 40px auto;
+           background: rgba(255, 255, 255, 0.2);
+
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.35);
         }
 
         h1 {
             text-align: center;
-            color: #0f172a;
+            margin-bottom: 20px;
+        }
+
+        form {
+            margin-bottom: 20px;
         }
 
         label {
             font-weight: bold;
-            margin-top: 10px;
-            display: block;
         }
 
         input, select, button {
             width: 100%;
-            padding: 12px;
-            margin-top: 8px;
-            font-size: 16px;
-            border-radius: 6px;
+            padding: 10px;
+            margin-top: 6px;
+            margin-bottom: 12px;
+            border-radius: 8px;
             border: 1px solid #ccc;
+            font-size: 15px;
         }
 
         button {
-            background: #0f172a;
+            background: #007bff;
             color: white;
             border: none;
             cursor: pointer;
         }
 
         button:hover {
-            background: #1e293b;
+            background: #0056b3;
+        }
+
+        .danger {
+            background: #dc3545;
+        }
+
+        .danger:hover {
+            background: #a71d2a;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #f1f1f1;
         }
 
         .resultado {
-            margin-top: 16px;
+            background: #e9f7ef;
             padding: 12px;
-            background: #e0f2fe;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
+            border-radius: 10px;
+            margin-top: 15px;
         }
 
-        .ranking {
-            margin-top: 20px;
-        }
-
-        .ranking h2 {
-            text-align: center;
-            color: #0f172a;
-        }
-
-        .item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .top {
-            background: #dcfce7;
-            font-weight: bold;
-        }
-
-        .posicao {
-            font-weight: bold;
-            margin-right: 6px;
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
         }
     </style>
 </head>
@@ -99,58 +103,75 @@
 <body>
 <div class="container">
 
-    <h1>📦 Carga por Setor</h1>
+    <h1>📊 Controle de Cargas por Setor</h1>
 
+    <!-- UPLOAD + CONSULTA -->
     <form method="POST" enctype="multipart/form-data">
-
-        <label>📂 Planilha Excel</label>
+        <label>📂 Enviar planilha Excel</label>
         <input type="file" name="arquivo" required>
 
-        <label>🔎 Código do Setor</label>
-        <input type="text" name="setor" placeholder="Ex: Id01, 4x4 frota 74">
+        <label>🔍 Pesquisar setor</label>
+        <input type="text" name="setor" placeholder="Ex: B12">
 
-        <label>📊 Ordem do Ranking</label>
+        <label>🏆 Ordem do ranking</label>
         <select name="ordem">
-            <option value="crescente" {% if ordem == "crescente" %}selected{% endif %}>
-                Crescente
-            </option>
-            <option value="decrescente" {% if ordem == "decrescente" %}selected{% endif %}>
-                Decrescente
-            </option>
+            <option value="crescente" {% if ordem == 'crescente' %}selected{% endif %}>Crescente</option>
+            <option value="decrescente" {% if ordem == 'decrescente' %}selected{% endif %}>Decrescente</option>
         </select>
 
-        <button type="submit">Consultar</button>
+        <button type="submit">📊 Processar</button>
     </form>
 
+    <!-- RESULTADO INDIVIDUAL -->
     {% if resultado %}
-        <div class="resultado">
-            {{ resultado[0] }} → Carga Total: {{ resultado[1] }}
-        </div>
+    <div class="resultado">
+        <strong>Setor:</strong> {{ resultado.setor }} <br>
+        <strong>Carga Total:</strong> {{ resultado.carga }}
+    </div>
     {% endif %}
 
+    <!-- RANKING -->
     {% if ranking %}
-        <div class="ranking">
-            <h2>🏆 Ranking de Carga</h2>
-
-            {% for item in ranking %}
-                <div class="item {% if loop.index <= 5 %}top{% endif %}">
-                    <span class="posicao">{{ loop.index }}º</span>
-                    <span>{{ item.setor }}</span>
-                    <span>{{ item.carga }}</span>
-                </div>
-            {% endfor %}
-        </div>
+    <h2>🏆 Ranking de Cargas</h2>
+    <table>
+        <tr>
+            <th>Posição</th>
+            <th>Setor</th>
+            <th>Carga Total</th>
+        </tr>
+        {% for item in ranking %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ item.setor }}</td>
+            <td>{{ item.carga }}</td>
+        </tr>
+        {% endfor %}
+    </table>
     {% endif %}
+
+    <!-- GERENCIAR SETORES -->
+    <h2>🧩 Meus Setores</h2>
+
+    <form method="POST" action="/add_setor">
+        <label>Adicionar setor</label>
+        <input type="text" name="novo_setor" required>
+        <button type="submit">➕ Adicionar</button>
+    </form>
+
+    <form method="POST" action="/del_setor">
+        <label>Excluir setor</label>
+        <select name="setor_excluir">
+            {% for s in setores %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="danger">🗑️ Excluir</button>
+    </form>
 
 </div>
-
-<!-- SERVICE WORKER -->
-<script>
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/static/service-worker.js");
-}
-</script>
-
 </body>
 </html>
+
+
+
 
